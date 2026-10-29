@@ -2,6 +2,9 @@
 
 一套**能长期挂着、还会自己找话说**的 QQ 机器人部署方案，沉淀了 2026-10-29 全天的踩坑结果。
 
+> 仓库地址：https://github.com/lang-cc/qqjqr
+> 克隆：`git clone https://github.com/lang-cc/qqjqr.git`　（没有 git 就在网页上 Code → Download ZIP）
+
 - 大脑：**AstrBot 4.29.3**（Agent 模式、人格、记忆、TTS、插件）
 - 协议端：**SnowLuma**（Windows，注入 QQNT）或 **NapCat**（Linux 云服务器，无头）
 - 附带：本地排队代理（治 429）、桌面控制台看门狗、7 个自研插件

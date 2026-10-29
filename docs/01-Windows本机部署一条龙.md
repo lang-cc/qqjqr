@@ -3,6 +3,18 @@
 > 适用：一台 **Windows 10/11 桌面电脑**，用 QQ 桌面客户端（QQNT）+ SnowLuma 接入，AstrBot 做大脑。
 > 全程约 **40~60 分钟**，不需要写代码，照着敲/点即可。
 > 最后更新：2026-10-29（对应 AstrBot 4.29.3 / SnowLuma 2.2.1 / QQNT 9.9.x）
+> 代码仓库：https://github.com/lang-cc/qqjqr
+
+### 先把代码弄到本机
+
+```bat
+git clone https://github.com/lang-cc/qqjqr.git D:\qqjqr
+cd /d D:\qqjqr
+```
+
+没装 git 就去 <https://git-scm.com/download/win> 装一个（一路下一步即可）；
+或者直接打开仓库网页 → 绿色 **Code** → **Download ZIP** → 解压成 `D:\qqjqr`。
+下面所有 `D:\qqjqr` 都可以换成你自己的路径。
 
 ---
 
@@ -86,11 +98,10 @@ python --version
 本文假设你放在 `D:\qqjqr`（换个盘也行，后面路径自己替换）。
 
 ```bat
-mkdir D:\qqjqr
 cd /d D:\qqjqr
 ```
 
-把仓库里的这些内容放进去：
+仓库克隆下来后目录长这样（已经齐了，不用再往里拷东西）：
 
 ```
 D:\qqjqr\
