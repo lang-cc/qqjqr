@@ -1,0 +1,91 @@
+{
+  "enable": {
+    "type": "bool",
+    "description": "总开关：关掉就只在你被 @/打 / 时说话",
+    "default": true
+  },
+  "groups": {
+    "type": "list",
+    "description": "生效的群号（留空 = 所有群都生效）",
+    "default": [
+      ""
+    ]
+  },
+  "topics": {
+    "type": "list",
+    "description": "兴趣牌：命中这些词的消息优先送去打分",
+    "default": [
+      "游戏",
+      "番剧",
+      "动画",
+      "新番",
+      "漫画",
+      "编程",
+      "代码",
+      "bug",
+      "python",
+      "脚本",
+      "服务器",
+      "部署",
+      "音乐",
+      "歌",
+      "耳机",
+      "猫",
+      "狗",
+      "宠物",
+      "好吃",
+      "奶茶",
+      "梗",
+      "表情包",
+      "好笑",
+      "离谱",
+      "为什么",
+      "怎么"
+    ]
+  },
+  "threshold": {
+    "type": "int",
+    "description": "兴趣分阈值（1-10）：分数达到才插话",
+    "default": 6
+  },
+  "cooldown_sec": {
+    "type": "int",
+    "description": "两次主动插话之间至少间隔多少秒",
+    "default": 90
+  },
+  "hourly_limit": {
+    "type": "int",
+    "description": "每小时最多主动插话几次（QQ 群限流，别设太大）",
+    "default": 30
+  },
+  "min_len": {
+    "type": "int",
+    "description": "多短的消息不判（字数）",
+    "default": 6
+  },
+  "blind_sample": {
+    "type": "float",
+    "description": "没命中关键词时，仍送去打分的概率（0~1），避免只认关键词",
+    "default": 0.15
+  },
+  "debug": {
+    "type": "bool",
+    "description": "把每次判定（分数/原因）写进日志",
+    "default": true
+  },
+  "judge_cooldown_sec": {
+    "type": "int",
+    "description": "多久最多打分一次（秒），控制调用成本",
+    "default": 20
+  },
+  "quote_reply": {
+    "type": "bool",
+    "description": "群聊回复时引用对方那条消息（语音回复也引用）",
+    "default": true
+  },
+  "quote_private": {
+    "type": "bool",
+    "description": "私聊回复时也引用对方那条消息",
+    "default": true
+  }
+}

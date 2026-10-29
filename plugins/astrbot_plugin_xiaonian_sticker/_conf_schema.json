@@ -1,0 +1,64 @@
+{
+  "enabled": {
+    "description": "开启收集",
+    "type": "bool",
+    "default": true,
+    "hint": "关掉后只剩发图/管理功能"
+  },
+  "auto_collect": {
+    "description": "自动全收（小心，会把不喜欢的也塞进来）",
+    "type": "bool",
+    "default": false,
+    "hint": "默认关：别人发的表情包只进「候选池」，你引用它发 /收 才真正入库。打开后就变成来者不拒。"
+  },
+  "recent_keep": {
+    "description": "候选池保留多少条图片消息",
+    "type": "int",
+    "default": 60,
+    "hint": "只在内存里，重启机器人就清空；够你回头挑就行"
+  },
+  "owner_ids": {
+    "description": "谁有权决定收哪张（QQ 号）",
+    "type": "list",
+    "default": [
+      ""
+    ],
+    "hint": "只有这些号能发 /收、/表情清理、/表情删；默认是「群主的大肥鱼——鱼」。面板管理员始终可以。"
+  },
+  "max_count": {
+    "description": "表情包总上限（张）",
+    "type": "int",
+    "default": 200,
+    "hint": "建议 180~200；装满后不再入库，需要先用 /表情清理 腾位置"
+  },
+  "warn_at": {
+    "description": "快满提醒阈值（张）",
+    "type": "int",
+    "default": 180,
+    "hint": "达到这个数，/表情库 会告警，日志也会 warning"
+  },
+  "max_file_kb": {
+    "description": "单张最大体积（KB）",
+    "type": "int",
+    "default": 1024,
+    "hint": "超过就不收，避免把大图/照片当表情包存进来"
+  },
+  "max_side": {
+    "description": "单张最长边（像素）",
+    "type": "int",
+    "default": 1200,
+    "hint": "超过就不收。表情包一般都在 500 像素以内"
+  },
+  "text_message_ok": {
+    "description": "带文字的图片消息也进候选池",
+    "type": "bool",
+    "default": false,
+    "hint": "关着时只把「纯图片/纯表情」放候选池；引用回复 /收 不受此限制"
+  },
+  "send_limit": {
+    "description": "单次最多发几张",
+    "type": "int",
+    "default": 5,
+    "hint": "/表情 10 这种一次性刷图的额度上限"
+  }
+}

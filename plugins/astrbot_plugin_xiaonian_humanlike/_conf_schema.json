@@ -1,0 +1,26 @@
+{
+  "group_at_only": {
+    "description": "群里只有被 @ 才回复",
+    "hint": "打开后群里不 @ 她她就不说话；/ 开头的命令仍然能用",
+    "type": "bool",
+    "default": true
+  },
+  "group_reply_rate": {
+    "description": "（备用）不按@限制时，群里接话的概率",
+    "hint": "只有关掉上面那个开关才生效",
+    "type": "float",
+    "default": 0.45
+  },
+  "group_selective": {
+    "description": "（旧开关，保留兼容）",
+    "hint": "现在由 group_at_only 控制",
+    "type": "bool",
+    "default": true
+  },
+  "auto_clean_history": {
+    "description": "定期清洗历史里的思考块",
+    "hint": "网关模型的英文思考会被存进历史，攒多了会让她越聊越木",
+    "type": "bool",
+    "default": true
+  }
+}

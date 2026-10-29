@@ -1,0 +1,6 @@
+name: astrbot_plugin_xiaonian_interest
+display_name: 小年 · 兴趣接话
+desc: 群里没人叫它时，按"兴趣分"决定要不要插一句：关键词粗筛 + 模型打分，带冷却和每小时上限。
+version: 0.1.0
+author: qqjqr
+repo: ""

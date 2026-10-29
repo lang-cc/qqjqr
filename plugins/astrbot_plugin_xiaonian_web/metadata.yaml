@@ -1,0 +1,9 @@
+name: astrbot_plugin_xiaonian_web
+display_name: 联网（会查东西的她）
+desc: 用 Bing 直连做搜索和网页读取，不需要任何 API key；她自己判断什么时候该查，查完用自己的话说
+short_desc: 会联网查东西，不用 key
+version: 0.1.0
+author: qqjqr
+repo: ''
+support_platforms:
+  - aiocqhttp

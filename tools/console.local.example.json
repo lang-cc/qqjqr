@@ -1,0 +1,5 @@
+{
+  "_说明": "复制成 console.local.json 再填（这个文件不会进仓库）",
+  "snowluma_token": "你的 SnowLuma OneBot accessToken（没有就留空）",
+  "gw_key": "你的网关 api key（控制台探测网关用）"
+}

@@ -1,0 +1,19 @@
+[Unit]
+Description=AstrBot
+After=network-online.target gwproxy.service
+Wants=network-online.target gwproxy.service
+
+[Service]
+Type=simple
+User=astrbot
+WorkingDirectory=/opt/astrbot
+Environment=PYTHONIOENCODING=utf-8
+Environment=TZ=Asia/Shanghai
+ExecStart=/opt/astrbot/.venv/bin/astrbot run
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/astrbot/logs/astrbot.log
+StandardError=append:/opt/astrbot/logs/astrbot.log
+
+[Install]
+WantedBy=multi-user.target

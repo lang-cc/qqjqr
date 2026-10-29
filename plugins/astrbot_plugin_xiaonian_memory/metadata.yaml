@@ -1,0 +1,11 @@
+name: astrbot_plugin_xiaonian_memory
+display_name: 记忆大脑 + 真人感（整合版）
+desc: 长期记忆（分类型存储、混合检索、渐进遗忘、人物画像、语感样本、多模态）+ 发送前真人感护栏，二合一；数据只进本地 SQLite
+short_desc: 长期记忆 + 防客服腔，一个插件
+version: v0.1.0
+author: qqjqr
+repo: ''
+support_platforms:
+  - aiocqhttp
+pages:
+  - panel

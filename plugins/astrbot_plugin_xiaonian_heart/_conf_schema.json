@@ -1,0 +1,51 @@
+{
+  "enable": {
+    "description": "启用情绪与主动",
+    "hint": "关掉后她不会再主动找你，但情绪状态仍会记录",
+    "type": "bool",
+    "default": true
+  },
+  "intensity": {
+    "description": "黏人程度",
+    "hint": "轻：半小时才找一次；中：15 分钟；重：8 分钟就开始念",
+    "type": "string",
+    "default": "heavy",
+    "options": ["light", "normal", "heavy"]
+  },
+  "master_qq": {
+    "description": "主人的 QQ 号",
+    "hint": "她只会主动找这个人",
+    "type": "int",
+    "default": 0
+  },
+  "target_umo": {
+    "description": "主动消息发到哪个会话",
+    "hint": "留空则自动用 平台:FriendMessage:主人QQ。格式举例 snowluma-onebot:FriendMessage:123456789",
+    "type": "string",
+    "default": ""
+  },
+  "persona_id": {
+    "description": "用哪个人格说话",
+    "hint": "主动消息会用这个人格的语气；留空默认 feiyu",
+    "type": "string",
+    "default": "feiyu"
+  },
+  "chat_provider_id": {
+    "description": "生成主动消息用的模型",
+    "hint": "留空则自动用当前会话的模型；填了就用指定 provider",
+    "type": "string",
+    "default": ""
+  },
+  "check_interval_sec": {
+    "description": "多久检查一次",
+    "hint": "秒。默认 60 秒检查一次该不该找你了",
+    "type": "int",
+    "default": 60
+  },
+  "daily_limit": {
+    "description": "每天最多主动几次",
+    "hint": "0 表示不限制（重度模式下建议留 0，否则不够黏）",
+    "type": "int",
+    "default": 0
+  }
+}

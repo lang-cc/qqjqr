@@ -1,0 +1,50 @@
+{
+  "learn_enable": {
+    "description": "每天自动学热搜热梗时事",
+    "hint": "关掉后只在聊天里需要时才搜",
+    "type": "bool",
+    "default": true
+  },
+  "learn_hours": {
+    "description": "每天几点学",
+    "hint": "逗号分隔的整点，默认 9,15,21（早中晚各一次）",
+    "type": "string",
+    "default": "9,15,21"
+  },
+  "news_ttl_days": {
+    "description": "热点保留几天",
+    "hint": "超过这个天数的内容自动不提，避免把旧闻当新闻说",
+    "type": "int",
+    "default": 3
+  },
+  "inject_news": {
+    "description": "聊天时提一句外面在聊什么",
+    "hint": "会往每轮对话里加 50 字左右",
+    "type": "bool",
+    "default": true
+  },
+  "inject_interval_hours": {
+    "description": "隔多久注入一次热点",
+    "hint": "别每句都塞，默认 3 小时一次",
+    "type": "int",
+    "default": 3
+  },
+  "max_results": {
+    "description": "每次搜几条",
+    "hint": "3-8 条",
+    "type": "int",
+    "default": 6
+  },
+  "target_umo": {
+    "description": "用哪个会话的模型",
+    "hint": "留空默认主人私聊",
+    "type": "string",
+    "default": ""
+  },
+  "chat_provider_id": {
+    "description": "学热点用哪个模型",
+    "hint": "留空则自动用当前会话模型",
+    "type": "string",
+    "default": ""
+  }
+}

@@ -1,0 +1,44 @@
+# 运行时与数据（含密钥、数据库、日志，绝不进仓库）
+.venv/
+.astrbot
+data/
+*.log
+*.db
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 系统
+Thumbs.db
+desktop.ini
+
+# AstrBot 运行时锁文件
+astrbot.lock
+
+# 构建/调试产物
+_build/
+_inspect_mem/
+.dsh-pyenv/
+tests/
+
+# 敏感备份（含明文密钥，绝不进仓库）
+backups/
+release/
+data/temp/
+
+# 本地密钥（控制台用，不进仓库）
+tools/console.local.json
+tools/*.bak
+
+# 旧项目备份（含私人信息，不入库）
+legacy-backup/
+部署任务文档.md
+tools/gw.local.json
+
+# 大二进制，不进仓库（需要就本地放 tools/ffmpeg.exe）
+tools/ffmpeg.exe
+tools/*.exe

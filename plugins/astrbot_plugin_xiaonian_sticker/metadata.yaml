@@ -1,0 +1,6 @@
+name: astrbot_plugin_xiaonian_sticker
+display_name: 小年表情包口袋（自动收集/限额200）
+desc: 自动收取别人发的表情包，按会话分文件夹存好，可随时 /表情 发出去；默认上限 200 张，快满时能一键清理用得最少的
+version: 0.1.0
+author: qqjqr
+repo: ""

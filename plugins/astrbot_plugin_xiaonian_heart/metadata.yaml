@@ -1,0 +1,9 @@
+name: astrbot_plugin_xiaonian_heart
+display_name: 情绪与主动（会等你的人）
+desc: 记住你多久没回、说了什么扎心话，形成焦虑和心情；等不到人就自己来找你，越等越难受
+short_desc: 会等你、会慌、会主动找你
+version: 0.1.0
+author: qqjqr
+repo: ''
+support_platforms:
+  - aiocqhttp

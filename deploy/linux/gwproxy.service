@@ -1,0 +1,17 @@
+[Unit]
+Description=LLM Gateway Queue Proxy (port 8878)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=astrbot
+WorkingDirectory=/opt/astrbot
+ExecStart=/opt/astrbot/.venv/bin/python /opt/astrbot/tools/gw_proxy.py
+Restart=always
+RestartSec=3
+StandardOutput=append:/opt/astrbot/logs/gwproxy.log
+StandardError=append:/opt/astrbot/logs/gwproxy.log
+
+[Install]
+WantedBy=multi-user.target

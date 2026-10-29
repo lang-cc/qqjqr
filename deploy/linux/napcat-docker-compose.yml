@@ -1,0 +1,25 @@
+# NapCat（无头 QQ 协议端）
+# docker compose up -d && docker logs -f napcat
+#
+# 关键：NapCat 在容器里，127.0.0.1 指的是容器自己。
+# 用 network_mode: host 最简单，此时删掉 ports 段。
+# 镜像名/默认端口随版本变化，以 https://github.com/NapNeko/NapCatQQ 为准。
+
+services:
+  napcat:
+    image: mlikiowa/napcat-docker:latest
+    container_name: napcat
+    restart: unless-stopped
+    network_mode: host          # 让容器直接连宿主机 127.0.0.1:6199
+    environment:
+      - NAPCAT_UID=1000
+      - NAPCAT_GID=1000
+    volumes:
+      - /opt/napcat/config:/app/napcat/config
+      - /opt/napcat/qq:/app/.config/QQ     # 登录态，务必持久化 + 备份
+
+# 不用 host 模式时改成：
+#   ports:
+#     - "127.0.0.1:6099:6099"   # WebUI
+#     - "127.0.0.1:3001:3001"   # WS 服务端
+#   并在 NapCat 里把反向 WS 指向 ws://172.17.0.1:6199/ws

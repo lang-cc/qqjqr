@@ -1,0 +1,6 @@
+name: astrbot_plugin_xiaonian_humanlike
+display_name: 真人化回复（示例插件）
+desc: 示例插件：注入人设、发消息前模拟打字延迟、去 AI 腔、自定义指令与 LLM 工具
+version: 0.2.0
+author: qqjqr
+repo: ""
