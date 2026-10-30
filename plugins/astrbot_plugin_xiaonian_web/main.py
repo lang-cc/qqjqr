@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """联网 · 会查东西、也知道外面在聊什么的她
 
-三件事：
+四件事：
 1. web_search / read_page：她自己判断要查什么，查完用自己的话说；
-2. 每天定时学一轮热搜、热梗、时事，存在 news.json（不进记忆库）；
-3. 聊天时轻轻注入「外面最近在聊」，让她接得上话，但不播新闻。
+2. bili_search / bili_hot：B站站内搜视频、看热门榜/排行榜/热搜词（走官方 API，不用 key）；
+3. 每天定时学一轮热搜、热梗、时事，存在 news.json（不进记忆库）；
+4. 聊天时轻轻注入「外面最近在聊」，让她接得上话，但不播新闻。
 """
 
 from __future__ import annotations
@@ -18,7 +19,15 @@ from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 
 from . import news as _news
-from .web import bing_search, fetch_text
+from .web import (
+    bili_hot_search,
+    bili_popular,
+    bili_ranking,
+    bili_search,
+    bili_search_text,
+    bing_search,
+    fetch_text,
+)
 
 INJECT_MARK = "【外面最近在聊】"
 
@@ -26,8 +35,8 @@ INJECT_MARK = "【外面最近在聊】"
 @register(
     "astrbot_plugin_xiaonian_web",
     "qqjqr",
-    "联网搜索、网页读取，以及每天自动学热搜热梗时事",
-    "0.2.0",
+    "联网搜索、网页读取、B站查询，以及每天自动学热搜热梗时事",
+    "0.3.0",
 )
 class WebSearchPlugin(Star):
     def __init__(self, context: Context, config: dict | None = None):
@@ -138,6 +147,8 @@ class WebSearchPlugin(Star):
     async def tool_web_search(self, event: AstrMessageEvent, query: str):
         """联网搜索实时信息。当需要最新消息、天气、价格、比赛结果、最近发生的事，或者你不确定的事情时使用。
 
+        搜B站上的视频请改用 bili_search（那个能直接拿到播放量、UP主、BV号）。
+
         Args:
             query(string): 搜索关键词，用中文，尽量具体
         """
@@ -163,6 +174,9 @@ class WebSearchPlugin(Star):
     async def tool_read_page(self, event: AstrMessageEvent, url: str):
         """读取一个网页的正文内容。当搜索结果的摘要不够、需要看全文时使用。
 
+        B站链接（BV号、b23.tv 短链、space 主页、search 页）会自动走官方 API，
+        拿到的是视频标题/UP主/播放量/简介，不是网页正文。
+
         Args:
             url(string): 完整网址，必须以 http:// 或 https:// 开头
         """
@@ -172,6 +186,46 @@ class WebSearchPlugin(Star):
             return "这个页面打不开，或者里面没有正文。"
         logger.info(f"[web] 读取 {url[:60]} 共 {len(text)} 字")
         return "网页正文如下（用你自己的话总结，不要照抄）：\n" + text
+
+    @llm_tool(name="bili_search")
+    async def tool_bili_search(self, event: AstrMessageEvent, keyword: str):
+        """在B站站内搜索视频。当有人问「B站上有没有/怎么样」「某个UP主/某个视频」，或者要看视频热度时用。
+
+        Args:
+            keyword(string): 想搜的内容，中文关键词
+        """
+
+        rows = await asyncio.to_thread(bili_search, keyword, 6)
+        if not rows:
+            return "B站那边没搜到，可能是关键词太偏。"
+        lines = []
+        for i, r in enumerate(rows, 1):
+            lines.append(f"{i}. {r['title']}\n   {r['snippet']}\n   {r['url']}")
+        logger.info(f"[web] B站搜「{keyword}」→ {len(rows)} 条")
+        return (
+            "以下是B站的搜索结果（带播放量、UP主、BV号）。"
+            "用你自己的话挑重点说，别罗列列表、别贴链接，除非对方要。\n\n" + "\n".join(lines)
+        )
+
+    @llm_tool(name="bili_hot")
+    async def tool_bili_hot(self, event: AstrMessageEvent, kind: str = "popular"):
+        """看B站现在什么火。有人问「B站最近有啥好看的/热门的」时用。
+
+        Args:
+            kind(string): popular（综合热门，默认）| ranking（排行榜）| hot（热搜词）
+        """
+
+        k = (kind or "popular").strip().lower()
+        if k in ("ranking", "排行", "排行榜"):
+            text = await asyncio.to_thread(bili_ranking, 8)
+        elif k in ("hot", "热搜", "热搜词"):
+            text = await asyncio.to_thread(bili_hot_search, 10)
+        else:
+            text = await asyncio.to_thread(bili_popular, 8)
+        if not text:
+            return "B站这三个榜这会儿都拿不到，过会儿再问。"
+        logger.info(f"[web] B站{kind} 取到 {len(text)} 字")
+        return "B站现在的榜（用你自己的话说，别照着念标题）：\n" + text
 
     # ---------------- 命令 ----------------
     @filter.command("搜")
@@ -202,6 +256,25 @@ class WebSearchPlugin(Star):
             yield event.plain_result("打不开，或者页面没有正文。")
             return
         yield event.plain_result(f"正文（前 1800 字）：\n{text}")
+
+    @filter.command("b站", alias={"B站", "bili"})
+    async def cmd_bilibili(self, event: AstrMessageEvent, keyword: str = ""):
+        """B站：/b站 关键词　|　/b站 热门　|　/b站 排行　|　/b站 热搜"""
+        kw = (keyword or "").strip()
+        if not kw or kw in ("热门", "热榜"):
+            text = await asyncio.to_thread(bili_popular, 8)
+            yield event.plain_result(text or "B站热门榜这会儿拿不到。")
+            return
+        if kw in ("排行", "排行榜", "ranking"):
+            text = await asyncio.to_thread(bili_ranking, 8)
+            yield event.plain_result(text or "B站排行榜这会儿拿不到。")
+            return
+        if kw in ("热搜", "热搜词", "hot"):
+            text = await asyncio.to_thread(bili_hot_search, 10)
+            yield event.plain_result(text or "B站热搜这会儿拿不到。")
+            return
+        text = await asyncio.to_thread(bili_search_text, kw, 6)
+        yield event.plain_result(text or f"B站没搜到「{kw}」，换个词试试。")
 
     @filter.command("热点")
     async def cmd_news(self, event: AstrMessageEvent):
