@@ -47,28 +47,50 @@ def _get(url: str, timeout: int = 15, headers: dict | None = None) -> bytes:
 
 _COOKIE: dict[str, str] = {}
 _COOKIE_AT = [0.0]
+_SESSION: dict[str, str] = {}
+
+SESSION_KEYS = ("SESSDATA", "bili_jct", "DedeUserID", "DedeUserID__ckMd5", "sid")
+
+
+def set_session(cookies: dict | None) -> None:
+    """登录后把 cookie 灌进来，之后所有B站请求都带登录态。"""
+    _SESSION.clear()
+    for k, v in (cookies or {}).items():
+        if v:
+            _SESSION[str(k)] = str(v)
+
+
+def has_session() -> bool:
+    return bool(_SESSION.get("SESSDATA"))
+
+
+def _csrf() -> str:
+    return _SESSION.get("bili_jct", "")
 
 
 def _bili_cookie(force: bool = False) -> str:
-    """领一个 buvid3 cookie。不带它，B站的 view 类接口对机房 IP 会一直返 412。"""
-    if _COOKIE and not force and time.time() - _COOKIE_AT[0] < 3600:
-        return "; ".join(f"{k}={v}" for k, v in _COOKIE.items())
-    try:
-        raw = _get(
-            "https://api.bilibili.com/x/frontend/finger/spi",
-            timeout=10,
-            headers=BILI_HEADERS,
-        )
-        d = (json.loads(raw.decode("utf-8", errors="ignore")) or {}).get("data") or {}
-        if d.get("b_3"):
-            _COOKIE.clear()
-            _COOKIE["buvid3"] = d["b_3"]
-            if d.get("b_4"):
-                _COOKIE["buvid4"] = d["b_4"]
-            _COOKIE_AT[0] = time.time()
-    except Exception:
-        pass
-    return "; ".join(f"{k}={v}" for k, v in _COOKIE.items())
+    """领一个 buvid3 cookie 并合并登录态。不带 buvid3 时，view 类接口对机房 IP 会一直 412。"""
+    if not _COOKIE or force or time.time() - _COOKIE_AT[0] >= 3600:
+        try:
+            raw = _get(
+                "https://api.bilibili.com/x/frontend/finger/spi",
+                timeout=10,
+                headers=BILI_HEADERS,
+            )
+            d = (json.loads(raw.decode("utf-8", errors="ignore")) or {}).get("data") or {}
+            if d.get("b_3"):
+                _COOKIE.clear()
+                _COOKIE["buvid3"] = d["b_3"]
+                if d.get("b_4"):
+                    _COOKIE["buvid4"] = d["b_4"]
+                _COOKIE_AT[0] = time.time()
+        except Exception:
+            pass
+    merged = dict(_COOKIE)
+    for k in SESSION_KEYS:
+        if _SESSION.get(k):
+            merged[k] = _SESSION[k]
+    return "; ".join(f"{k}={v}" for k, v in merged.items())
 
 
 def _get_json(url: str, timeout: int = 12, headers: dict | None = None, retries: int = 3) -> dict | None:
@@ -336,6 +358,7 @@ def bili_view(key: str, ttl: int = 300) -> dict | None:
         pub = "?"
     out = {
         "bvid": d.get("bvid") or "",
+        "aid": d.get("aid"),
         "title": _clean(d.get("title"), 120),
         "up": _clean(owner.get("name"), 40),
         "mid": owner.get("mid"),
@@ -421,39 +444,61 @@ def bili_search_text(keyword: str, n: int = 6) -> str:
     return "\n".join(lines)
 
 
-def _bili_video_list(api: str, n: int, name: str) -> str:
+def _bili_items(api: str, n: int) -> list[dict]:
+    """把 popular / ranking 这类接口的 list 统一成 [{bvid,title,up,play,duration,url}]。"""
     j = _get_json(api)
     items = ((j or {}).get("data") or {}).get("list") or []
-    if not items:
+    out: list[dict] = []
+    for it in items[:n]:
+        stat = it.get("stat") or {}
+        bvid = it.get("bvid") or ""
+        out.append(
+            {
+                "bvid": bvid,
+                "title": _clean(it.get("title"), 90),
+                "up": _clean((it.get("owner") or {}).get("name"), 24),
+                "play": stat.get("view"),
+                "danmaku": stat.get("danmaku"),
+                "duration": _fmt_dur(it.get("duration")),
+                "url": "https://www.bilibili.com/video/" + bvid,
+            }
+        )
+    return out
+
+
+def _items_text(rows: list[dict], name: str) -> str:
+    if not rows:
         return ""
     lines = [f"【B站{name}】"]
-    for i, it in enumerate(items[:n], 1):
-        stat = it.get("stat") or {}
+    for i, r in enumerate(rows, 1):
         lines.append(
-            f"{i}. {_clean(it.get('title'), 80)}\n"
-            f"   UP：{_clean((it.get('owner') or {}).get('name'), 24)}　"
-            f"播放：{_fmt_num(stat.get('view'))}　时长：{_fmt_dur(it.get('duration'))}　"
-            f"https://www.bilibili.com/video/{it.get('bvid')}"
+            f"{i}. {r['title']}\n"
+            f"   UP：{r['up']}　播放：{_fmt_num(r['play'])}　时长：{r['duration']}　{r['url']}"
         )
     return "\n".join(lines)
 
 
+def bili_popular_items(n: int = 8) -> list[dict]:
+    return _bili_items(
+        "https://api.bilibili.com/x/web-interface/popular?ps=%d&pn=1" % max(n, 5), n
+    )
+
+
 def bili_popular(n: int = 8) -> str:
     """B站综合热门。"""
-    return _bili_video_list(
-        "https://api.bilibili.com/x/web-interface/popular?ps=%d&pn=1" % max(n, 5), n, "热门榜"
-    )
+    return _items_text(bili_popular_items(n), "热门榜")
+
+
+def bili_ranking_items(n: int = 8) -> list[dict]:
+    return _bili_items("https://api.bilibili.com/x/web-interface/ranking/v2?rid=0&type=all", n)
 
 
 def bili_ranking(n: int = 8) -> str:
     """B站全站排行榜。"""
-    return _bili_video_list(
-        "https://api.bilibili.com/x/web-interface/ranking/v2?rid=0&type=all", n, "排行榜"
-    )
+    return _items_text(bili_ranking_items(n), "排行榜")
 
 
-def bili_hot_search(n: int = 10) -> str:
-    """B站热搜词。"""
+def bili_hot_words(n: int = 10) -> list[str]:
     j = _get_json("https://api.bilibili.com/x/web-interface/search/square?limit=%d" % max(n, 10))
     items = (((j or {}).get("data") or {}).get("trending") or {}).get("list") or []
     words = []
@@ -461,9 +506,123 @@ def bili_hot_search(n: int = 10) -> str:
         w = _clean(it.get("keyword") or it.get("show_name"), 30)
         if w:
             words.append(w)
+    return words
+
+
+def bili_feed(n: int = 8) -> list[dict]:
+    """B站首页推荐流——她真的在「刷」的那种。"""
+    j = _get_json(
+        "https://api.bilibili.com/x/web-interface/index/top/rcmd?fresh_type=3&ps=%d&feed_version=V8"
+        % max(n, 8)
+    )
+    items = ((j or {}).get("data") or {}).get("item") or []
+    out: list[dict] = []
+    for it in items:
+        if it.get("goto") not in (None, "av"):
+            continue
+        bvid = it.get("bvid") or ""
+        if not bvid:
+            continue
+        stat = it.get("stat") or {}
+        reason = it.get("rcmd_reason") or ""
+        if isinstance(reason, dict):
+            reason = reason.get("content") or ""
+        out.append(
+            {
+                "bvid": bvid,
+                "title": _clean(it.get("title"), 90),
+                "up": _clean((it.get("owner") or {}).get("name"), 24),
+                "play": stat.get("view"),
+                "danmaku": stat.get("danmaku"),
+                "duration": _fmt_dur(it.get("duration")),
+                "desc": _clean(it.get("desc"), 120),
+                "reason": _clean(reason, 30),
+                "url": "https://www.bilibili.com/video/" + bvid,
+            }
+        )
+        if len(out) >= n:
+            break
+    return out
+
+
+def bili_feed_text(n: int = 8) -> str:
+    rows = bili_feed(n)
+    if not rows:
+        return ""
+    lines = [f"【B站推荐流】刚刷到 {len(rows)} 个："]
+    for i, r in enumerate(rows, 1):
+        tail = f"　（推荐理由：{r['reason']}）" if r.get("reason") else ""
+        lines.append(
+            f"{i}. {r['title']}\n"
+            f"   UP：{r['up']}　播放：{_fmt_num(r['play'])}　时长：{r['duration']}{tail}\n   {r['url']}"
+        )
+    return "\n".join(lines)
+
+
+def bili_bangumi(n: int = 5) -> str:
+    """B站番剧排行榜。"""
+    j = _get_json("https://api.bilibili.com/pgc/web/rank/list?day=3&season_type=1")
+    items = ((j or {}).get("result") or {}).get("list") or []
+    if not items:
+        return ""
+    lines = ["【B站番剧榜】"]
+    for i, it in enumerate(items[:n], 1):
+        lines.append(
+            f"{i}. {_clean(it.get('title'), 60)}　"
+            f"{_clean(it.get('sub_title'), 40)}　追番 {_fmt_num(it.get('order'))}"
+        )
+    return "\n".join(lines)
+
+
+def bili_comments(key: str, n: int = 8) -> str:
+    """评论区点赞最高的几条（不需要登录）。"""
+    v = bili_view(key)
+    if not v:
+        return ""
+    aid = v.get("aid")
+    if not aid:
+        return ""
+    j = _get_json(
+        "https://api.bilibili.com/x/v2/reply?type=1&oid=%s&sort=2&ps=%d" % (aid, max(n, 10))
+    )
+    data = (j or {}).get("data") or {}
+    replies = data.get("replies") or []
+    total = (data.get("page") or {}).get("count")
+    if not replies:
+        return ""
+    lines = [
+        f"【B站评论区】{v['title']}"
+        f"（共 {_fmt_num(total)} 条评论，下面是点赞最高的几条）"
+    ]
+    for i, r in enumerate(replies[:n], 1):
+        msg = _clean((r.get("content") or {}).get("message"), 120)
+        who = _clean((r.get("member") or {}).get("uname"), 20)
+        sub = int(r.get("rcount") or 0)
+        extra = f"，{sub} 条回复" if sub else ""
+        lines.append(f"{i}. {who}（赞 {_fmt_num(r.get('like'))}{extra}）：{msg}")
+    return "\n".join(lines)
+
+
+def bili_digest(key: str, n_comments: int = 5) -> str:
+    """视频信息 + 几条热评，拼成「她看完这条视频大概知道在聊什么」的素材。"""
+    head = bili_view_text(key)
+    if not head:
+        return ""
+    tail = bili_comments(key, n_comments)
+    return (head + "\n\n" + tail) if tail else head
+
+
+def bili_hot_search(n: int = 10) -> str:
+    """B站热搜词。"""
+    words = bili_hot_words(n)
     if not words:
         return ""
     return "【B站热搜】" + "　".join(f"{i}. {w}" for i, w in enumerate(words, 1))
+
+
+def bili_hot_search_legacy(n: int = 10) -> str:
+    """旧名兼容（0.3.0 之前调用过的地方）。"""
+    return bili_hot_search(n)
 
 
 def bili_user(mid, n: int = 5) -> str:
@@ -594,3 +753,144 @@ def fetch_text(url: str, max_chars: int = 2500) -> str:
     except Exception:
         return ""
     return _html_to_text(raw, max_chars)
+
+
+# --------------------------------------------------------------------------- 登录之后才做得成的事
+
+
+def _post(url: str, data: dict, timeout: int = 15) -> dict | None:
+    body = urllib.parse.urlencode(data).encode()
+    req = urllib.request.Request(
+        url,
+        data=body,
+        method="POST",
+        headers={
+            **BILI_HEADERS,
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Cookie": _bili_cookie(),
+            "Referer": "https://www.bilibili.com/",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            j = json.loads(r.read().decode("utf-8", errors="ignore"))
+        return j if isinstance(j, dict) else None
+    except Exception:
+        return None
+
+
+def _video_params(key: str) -> dict:
+    kind, val = bili_key(key)
+    if not kind:
+        return {}
+    return {"bvid": val} if kind == "bvid" else {"aid": val}
+
+
+def _need_login() -> str:
+    return "还没登录B站账号，先发 /b站登录 扫一下码。"
+
+
+def bili_like(key: str, on: bool = True) -> str:
+    """点赞（需要登录）。"""
+    if not has_session():
+        return _need_login()
+    p = _video_params(key)
+    if not p:
+        return "没认出是哪个视频。"
+    j = _post(
+        "https://api.bilibili.com/x/web-interface/archive/like",
+        {**p, "like": "1" if on else "2", "csrf": _csrf()},
+    )
+    if not j:
+        return "点赞请求没发出去。"
+    if j.get("code") == 0:
+        return "点了赞。" if on else "取消赞了。"
+    return f"点不了：{j.get('message') or j.get('code')}"
+
+
+def bili_coin(key: str, n: int = 1) -> str:
+    """投币（需要登录）。"""
+    if not has_session():
+        return _need_login()
+    p = _video_params(key)
+    if not p:
+        return "没认出是哪个视频。"
+    j = _post(
+        "https://api.bilibili.com/x/web-interface/coin/add",
+        {**p, "multiply": str(max(1, min(2, int(n or 1)))), "select_like": "0", "csrf": _csrf()},
+    )
+    if not j:
+        return "投币请求没发出去。"
+    if j.get("code") == 0:
+        return "投了币。"
+    return f"投不了：{j.get('message') or j.get('code')}"
+
+
+def bili_follow(mid, on: bool = True) -> str:
+    """关注 / 取关 UP主（需要登录）。"""
+    if not has_session():
+        return _need_login()
+    try:
+        mid = str(int(str(mid).strip()))
+    except Exception:
+        return "UID 不对。"
+    j = _post(
+        "https://api.bilibili.com/x/relation/modify",
+        {"fid": mid, "act": "1" if on else "2", "re_src": "11", "csrf": _csrf()},
+    )
+    if not j:
+        return "关注请求没发出去。"
+    if j.get("code") == 0:
+        return "关注上了。" if on else "取关了。"
+    return f"关注没成：{j.get('message') or j.get('code')}"
+
+
+def bili_comment(key: str, text: str) -> str:
+    """在视频下发一条评论（需要登录；慎用）。"""
+    if not has_session():
+        return _need_login()
+    msg = _clean(text, 200)
+    if len(msg) < 2:
+        return "评论太短了。"
+    v = bili_view(key)
+    aid = (v or {}).get("aid")
+    if not aid:
+        return "没认出是哪个视频。"
+    j = _post(
+        "https://api.bilibili.com/x/v2/reply/add",
+        {"oid": str(aid), "type": "1", "message": msg, "csrf": _csrf()},
+    )
+    if not j:
+        return "评论没发出去。"
+    if j.get("code") == 0:
+        return "评论发出去了。"
+    return f"评论被拒：{j.get('message') or j.get('code')}"
+
+
+def bili_myinfo() -> dict:
+    """当前登录是谁；没登录返回 {}。"""
+    if not has_session():
+        return {}
+    req = urllib.request.Request(
+        "https://api.bilibili.com/x/web-interface/nav",
+        headers={
+            **BILI_HEADERS,
+            "Cookie": _bili_cookie(),
+            "Referer": "https://www.bilibili.com/",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=12) as r:
+            j = json.loads(r.read().decode("utf-8", errors="ignore"))
+    except Exception:
+        return {}
+    d = (j or {}).get("data") or {}
+    if not d.get("isLogin"):
+        return {}
+    return {
+        "mid": d.get("mid"),
+        "uname": d.get("uname"),
+        "coins": d.get("money"),
+        "level": ((d.get("level_info") or {}).get("current_level")),
+        "vip": d.get("vipStatus") == 1,
+    }

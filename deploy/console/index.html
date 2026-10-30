@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f7f9">
+<meta name="format-detection" content="telephone=no">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232f6fed'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle'%3E%F0%9F%90%9F%3C/text%3E%3C/svg%3E">
+<title>肥鱼控制台</title>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --edge:#e3e6eb; --line:#eef0f3;
+  --fg:#131720; --dim:#5a6472; --faint:#8b93a1;
+  --ok:#12915a; --okbg:#e9f7f0; --okedge:#bfe8d5;
+  --bad:#d33a3a; --badbg:#fdeeee; --badedge:#f6cfcf;
+  --warn:#b46b00; --warnbg:#fdf3e3; --warnedge:#f4e0bc;
+  --acc:#2f6fed; --accbg:#eef4ff; --accedge:#cfe0ff;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
+  font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei UI","PingFang SC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+body{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+
+header{position:sticky;top:0;z-index:15;background:rgba(245,246,248,.92);
+  backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--edge)}
+.hd{max-width:2400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:calc(11px + env(safe-area-inset-top)) 16px 11px}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--acc);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto}
+.ttl{font-size:16.5px;font-weight:800;letter-spacing:.2px}
+.sub{font-size:11px;color:var(--faint);margin-top:2px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.pill{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+  padding:6px 11px;border-radius:999px;border:1px solid var(--edge);background:#fff;
+  color:var(--dim);white-space:nowrap;box-shadow:var(--shadow)}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.pill.ok{border-color:var(--okedge);background:var(--okbg);color:var(--ok)}
+.pill.ok .dot{background:var(--ok)}
+.pill.bad{border-color:var(--badedge);background:var(--badbg);color:var(--bad)}
+.pill.bad .dot{background:var(--bad)}
+.hactions{display:flex;align-items:center;gap:8px;margin-left:auto;
+  flex-wrap:wrap;justify-content:flex-end}
+.btn.sm{padding:7px 12px;font-size:12.5px;border-radius:9px;box-shadow:none}
+
+main{max-width:2400px;margin:0 auto;padding:14px clamp(14px,1.6vw,34px) 0}
+.card{background:var(--card);border:1px solid var(--edge);border-radius:14px;
+  padding:14px 15px;margin-bottom:12px;box-shadow:var(--shadow)}
+.h{font-size:12px;font-weight:700;color:var(--faint);letter-spacing:.6px;
+  margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.h em{font-style:normal;font-weight:600;color:#a8aeb9;font-size:11px;letter-spacing:0}
+
+.row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.row:last-of-type{border-bottom:none;padding-bottom:2px}
+.row .dot{width:8px;height:8px;border-radius:50%;background:#cfd4dc;flex:0 0 auto}
+.row .txt{flex:1;min-width:0}
+.row .name{font-size:13.5px;font-weight:650}
+.row .desc{font-size:10.5px;color:var(--faint);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:8px;white-space:nowrap;
+  background:#f3f4f7;color:var(--dim);border:1px solid var(--edge);
+  max-width:54vw;overflow:hidden;text-overflow:ellipsis}
+.row.on .dot{background:var(--ok)}
+.row.on .badge{color:var(--ok);background:var(--okbg);border-color:var(--okedge)}
+.row.off .dot{background:var(--bad)}
+.row.off .badge{color:var(--bad);background:var(--badbg);border-color:var(--badedge)}
+.row.mid .dot{background:#e0a53a}
+.row.mid .badge{color:var(--warn);background:var(--warnbg);border-color:var(--warnedge)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px;
+  padding-top:11px;border-top:1px solid var(--line)}
+.stat{background:#fafbfc;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.stat .k{font-size:10.5px;color:var(--faint)}
+.stat .v{font-size:18px;font-weight:800;margin-top:1px;letter-spacing:-.3px}
+
+.sw{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.sw label{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim)}
+.sw input{appearance:none;width:36px;height:21px;border-radius:99px;background:#dfe3e9;
+  border:1px solid var(--edge);position:relative;outline:none;transition:.15s;cursor:pointer;flex:0 0 auto}
+.sw input:checked{background:var(--acc);border-color:var(--acc)}
+.sw input::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;
+  background:#fff;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.sw input:checked::after{transform:translateX(15px)}
+
+a.entry{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--fg);
+  padding:12px 12px;border:1px solid var(--edge);background:#fff;border-radius:12px;
+  margin-bottom:8px;transition:.14s;box-shadow:var(--shadow)}
+a.entry:last-child{margin-bottom:0}
+a.entry:hover{border-color:#cfd6e2;box-shadow:0 2px 8px rgba(16,24,40,.07)}
+a.entry:active{transform:scale(.995);background:#fafbfc}
+a.entry .ic{width:34px;height:34px;flex:0 0 auto;border-radius:10px;background:#f1f3f7;
+  display:flex;align-items:center;justify-content:center;font-size:16px}
+a.entry .et{flex:1;min-width:0}
+a.entry .en{display:block;font-size:13.5px;font-weight:750}
+a.entry .ed{display:block;font-size:11px;color:var(--faint);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+a.entry .go{font-size:11.5px;color:var(--faint);white-space:nowrap;font-weight:700}
+a.entry.hot{border-color:var(--accedge);background:linear-gradient(180deg,#f7faff,#eef4ff)}
+a.entry.hot .ic{background:var(--acc);color:#fff;box-shadow:0 2px 6px rgba(47,111,237,.28)}
+a.entry.hot .go{color:var(--acc)}
+
+.it{padding:11px 0;border-bottom:1px solid var(--line)}
+.it:first-of-type{padding-top:0}
+.it:last-child{border-bottom:none;padding-bottom:0}
+.it .n{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
+.it .u{font-size:11.5px;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it .u a{color:var(--acc);text-decoration:none}
+.it .d{font-size:10.5px;color:var(--faint);margin-top:4px;line-height:1.5}
+.cred{display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap}
+.cred .mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11.5px;
+  background:#f6f7f9;border:1px solid var(--edge);border-radius:7px;padding:3px 8px;color:#333c4a;
+  -webkit-user-select:all;user-select:all}
+.cred .pw{color:var(--ok);font-weight:600}
+.cred .sep{color:#c3c9d3;font-size:11px}
+.cp{margin-left:auto;border:1px solid var(--edge);background:#fff;color:var(--dim);
+  border-radius:8px;padding:6px 11px;font-size:11.5px;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:.12s}
+.cp:hover{border-color:#cfd6e2;color:var(--fg)}
+.cp:active{transform:scale(.97)}
+.cp.done{background:var(--okbg);border-color:var(--okedge);color:var(--ok)}
+
+.kv{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.kv:last-of-type{border-bottom:none}
+.kv .k{color:var(--dim)}
+.kv .v{font-weight:700;text-align:right;word-break:break-all}
+.dline{margin-top:9px;font-size:11.5px;line-height:1.6;color:var(--dim);word-break:break-all;
+  background:#fafbfc;border:1px solid var(--line);border-radius:9px;padding:8px 10px;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.dhead{font-size:11px;color:var(--faint);margin-top:11px}
+.log{margin:0;min-height:220px;max-height:560px;overflow:auto;border-radius:10px;padding:10px 11px;
+  background:#0e1420;color:#c9dcff;border:1px solid #1c2432;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;line-height:1.55;
+  white-space:pre-wrap;word-break:break-all}
+.h select{font:inherit;font-size:11px;font-weight:600;letter-spacing:0;color:var(--dim);
+  background:#fff;border:1px solid var(--edge);border-radius:7px;padding:3px 7px;cursor:pointer}
+
+footer{position:fixed;left:0;right:0;bottom:0;z-index:20;
+  padding:9px 14px calc(9px + env(safe-area-inset-bottom));
+  background:rgba(255,255,255,.94);border-top:1px solid var(--edge);
+  backdrop-filter:blur(12px);box-shadow:0 -1px 8px rgba(16,24,40,.05)}
+.btns{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;max-width:520px;margin:0 auto}
+.btn{border:1px solid var(--edge);border-radius:11px;padding:12px 2px;font-size:13px;font-weight:700;
+  color:var(--fg);background:#fff;cursor:pointer;transition:.12s;font-family:inherit;
+  box-shadow:var(--shadow)}
+.btn:hover{border-color:#cfd6e2}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:0 2px 8px rgba(47,111,237,.28)}
+.btn.dan{background:#fff;border-color:var(--badedge);color:var(--bad)}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);z-index:30;
+  bottom:calc(80px + env(safe-area-inset-bottom));background:#1d2431;color:#fff;
+  border-radius:10px;padding:9px 15px;font-size:12.5px;opacity:0;pointer-events:none;
+  transition:.22s;max-width:92vw;text-align:center;box-shadow:0 6px 20px rgba(16,24,40,.22)}
+.toast.show{opacity:1}
+
+.banner{display:none;margin:0 0 14px;padding:12px 14px;border-radius:12px;
+  background:#fff8e8;border:1px solid #f0cb84;color:#7a5200;
+  font-size:13px;line-height:1.6}
+.banner.show{display:block}
+.banner b{color:#8a3b00}
+.banner a{color:#0b5bd3;text-decoration:underline;font-weight:700}
+
+
+@media(min-width:1500px){
+  /* 大屏：内容铺满宽度，字号/间距同步放大，避免看着空 */
+  main{padding-top:18px}
+  .hd{padding-left:24px;padding-right:24px}
+  .card{padding:16px 18px;border-radius:16px}
+  .row{padding:10px 0}
+  .row .name{font-size:14.5px}
+  .row .desc{font-size:11.5px}
+  .badge{font-size:12px}
+  .stat .v{font-size:22px}
+  .stat .k{font-size:11.5px}
+  .kv{font-size:13.5px;padding:10px 0}
+  a.entry{padding:14px 14px}
+  a.entry .en,.it .n{font-size:14px}
+  a.entry .ed{font-size:11.5px}
+  .cred .mono{font-size:12.5px}
+  .btns{max-width:620px}
+}
+@media(min-width:1500px) and (min-height:900px){
+  /* 又宽又高的大屏：把行距放松一点，别让内容缩在左上角 */
+  .row{padding:13px 0}
+  a.entry{padding:16px 14px;margin-bottom:10px}
+  .kv{padding:12px 0}
+  .card{margin-bottom:16px}
+  .it{padding:13px 0}
+}
+@media(min-width:1000px){
+  /* 桌面/大屏：三栏，内容铺满窗口宽度（状态+限流｜入口+登录信息｜运行日志） */
+  .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start;width:100%}
+  .col>.card:last-child{margin-bottom:0}
+  main{padding-top:16px}
+}
+@media(min-width:1900px){
+  /* 超宽屏：仍三栏，但栏宽变大，靠字号/留白撑住视觉密度 */
+  .card{padding:18px 20px}
+  .row .name{font-size:15px}
+  .kv{font-size:14px}
+}
+
+@media(min-width:700px) and (max-width:999px){
+  /* 平板竖屏/小平板：两栏，自动均衡 */
+  .cols{display:block;columns:2;column-gap:12px}
+  .col{display:contents}
+  .card{break-inside:avoid;page-break-inside:avoid;margin-bottom:12px}
+}
+@media(max-width:699px){
+  /* 手机/平板：单列，顺序＝状态 → 消息限流 → 入口 → 登录信息 → 运行日志 */
+  .cols{display:flex;flex-direction:column}
+  .col{display:contents}
+  #c-status{order:1} #c-msg{order:2} #c-entries{order:3}
+  #c-creds{order:4} #c-log{order:5}
+  .hd{gap:8px;flex-wrap:wrap}
+  .brand{flex:1 1 auto}
+  .ttl{white-space:nowrap}
+  .hactions{flex:1 1 100%;gap:6px;margin-left:0;margin-top:6px;justify-content:flex-end}
+  .btn.sm{padding:6px 10px;font-size:12px}
+  .pill{padding:5px 9px;font-size:11.5px}
+  .cols>.col>.card{margin-bottom:12px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd">
+    <div class="brand">
+      <div class="logo">🐟</div>
+      <div style="min-width:0">
+        <div class="ttl">肥鱼控制台</div>
+        <div class="sub">状态 · 登录 · 入口　<span id="now"></span></div>
+      </div>
+    </div>
+    <div class="hactions">
+      <button class="btn sm pri" data-act="start_all">启动</button>
+      <button class="btn sm dan" data-act="stop_all">停止</button>
+      <button class="btn sm" data-act="restart_all">重启</button>
+      <button class="btn sm" id="btn_refresh">刷新</button>
+      <div class="pill" id="pill"><span class="dot"></span><span id="pillTxt">检测中</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="banner" id="banner"></div>
+  <div class="cols">
+    <div class="col">
+      <div class="card" id="c-status">
+        <div class="h"><span>服务状态</span><em id="sum">—</em></div>
+        <div id="rows"></div>
+        <div class="stats">
+          <div class="stat"><div class="k">累计请求</div><div class="v" id="s_req">0</div></div>
+          <div class="stat"><div class="k">排队次数</div><div class="v" id="s_queued">0</div></div>
+          <div class="stat"><div class="k">出错次数</div><div class="v" id="s_err">0</div></div>
+        </div>
+        <div class="sw">
+          <label><input type="checkbox" id="sw_auto" checked>自动刷新（8 秒）</label>
+        </div>
+      </div>
+      <div class="card" id="c-msg">
+        <div class="h"><span>消息与限流</span></div>
+        <div class="kv"><span class="k">今日入站消息</span><span class="v" id="m_in">—</span></div>
+        <div class="kv"><span class="k">发送情况</span><span class="v" id="m_send">—</span></div>
+        <div class="kv"><span class="k">今日 429 限流</span><span class="v" id="m_429">0</span></div>
+        <div class="dline" id="m_429h">有排队代理挡着，正常应为 0</div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card" id="c-entries">
+        <div class="h"><span>入口</span><em>点开即跳转</em></div>
+
+        <a class="entry hot" href="http://39.105.211.36/vnc/vnc.html?autoconnect=1&amp;resize=scale&amp;password=_aFdwPfpp-fHAleUHxbF" target="_blank" rel="noopener">
+          <span class="ic">📱</span>
+          <span class="et">
+            <span class="en">虚拟桌面 · 扫码登录</span>
+            <span class="ed">QQ 掉线时，扫码把它拉回来</span>
+          </span>
+          <span class="go">打开 →</span>
+        </a>
+
+        <a class="entry" href="javascript:void 0" id="entry_bili">
+          <span class="ic">📺</span>
+          <span class="et">
+            <span class="en">B站 · 扫码登录</span>
+            <span class="ed" id="bili_state_txt">未登录 · 点这里出二维码</span>
+          </span>
+          <span class="go" id="bili_go">打开 →</span>
+        </a>
+
+        <div id="bili_panel" style="display:none;border:1px solid var(--edge);border-radius:12px;background:#fff;padding:14px;margin:-2px 0 8px">
+          <div style="text-align:center">
+            <div style="font-size:11.5px;color:#8a9099;margin-bottom:8px">手机B站 App →「我的」→ 扫一扫 → 扫完在手机上点「确认登录」</div>
+            <img id="bili_qr" alt="B站登录二维码" style="width:186px;height:186px;border:1px solid var(--edge);border-radius:10px;background:#fff;padding:6px">
+            <div style="font-size:12px;margin-top:8px" id="bili_qrmsg">等待扫码…</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;justify-content:center;flex-wrap:wrap">
+            <button class="btn sm pri" id="btn_bili_qr">重新出码</button>
+            <button class="btn sm" id="btn_bili_out" style="display:none">退出登录</button>
+          </div>
+        </div>
+
+        <a class="entry" href="http://39.105.211.36/" target="_blank" rel="noopener">
+          <span class="ic">🤖</span>
+          <span class="et">
+            <span class="en">AstrBot 面板</span>
+            <span class="ed">人格 / 模型 / 白名单 / 语音</span>
+          </span>
+          <span class="go">打开 →</span>
+        </a>
+
+        <a class="entry" href="http://39.105.211.36/snowluma/" target="_blank" rel="noopener">
+          <span class="ic">🛰️</span>
+          <span class="et">
+            <span class="en">SnowLuma WebUI</span>
+            <span class="ed">协议端设置 · 反向 WS · 账号状态</span>
+          </span>
+          <span class="go">打开 →</span>
+        </a>
+
+      </div>
+
+      <div class="card" id="c-creds">
+        <div class="h"><span>登录信息</span><em>点右侧按钮复制</em></div>
+
+        <div class="it">
+          <div class="n">当前 QQ</div>
+          <div class="u" id="l_qq">—</div>
+          <div class="d" id="l_qqd">当前登录</div>
+        </div>
+
+        <div class="it">
+          <div class="n">AstrBot 面板</div>
+          <div class="cred">
+            <span class="mono">astrbot</span><span class="sep">/</span><span class="mono pw">FeiyuBot#2026</span>
+            <button class="cp" data-copy="FeiyuBot#2026">复制密码</button>
+          </div>
+        </div>
+
+        <div class="it">
+          <div class="n">SnowLuma WebUI</div>
+          <div class="cred">
+            <span class="mono">admin</span><span class="sep">/</span><span class="mono pw">FeiyuBot#2026</span>
+            <button class="cp" data-copy="FeiyuBot#2026">复制密码</button>
+          </div>
+        </div>
+
+        <div class="it">
+          <div class="n">SnowLuma 访问令牌</div>
+          <div class="cred">
+            <span class="mono pw" id="l_tok">—</span>
+            <button class="cp" id="cp_tok" data-copy="">复制令牌</button>
+          </div>
+          <div class="d" id="l_tokd">这是给接口用的 accessToken（HTTP :3000 / WS :3001），<b>不是网页登录密码</b>；反向 WS→AstrBot :6199 没设 token</div>
+        </div>
+
+        <div class="it">
+          <div class="n">虚拟桌面（扫码登录）</div>
+          <div class="cred">
+            <span class="mono pw">_aFdwPfpp-fHAleUHxbF</span>
+            <button class="cp" data-copy="_aFdwPfpp-fHAleUHxbF">复制密码</button>
+          </div>
+          <div class="d">手机扫码：点上面的入口 → 画面里会出现 QQ 登录二维码 → 双指放大 → 手机 QQ 扫一扫。</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col">
+
+      <div class="card" id="c-log">
+        <div class="h"><span>运行日志</span>
+          <select id="logsrc">
+            <option value="astrbot">AstrBot</option>
+            <option value="snowluma">SnowLuma</option>
+            <option value="gwproxy">排队代理</option>
+          </select>
+        </div>
+        <pre class="log" id="logbox">加载中…</pre>
+        <div class="dline" id="loghint">最近 120 行 · 跟自动刷新一起更新 · 往下翻看历史时暂停跟随</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ORIGIN = 'http://39.105.211.36';
+const LOCAL = (location.protocol === 'file:');
+const bannerEl = document.getElementById('banner');
+function showBanner(html) { bannerEl.innerHTML = html; bannerEl.classList.add('show'); }
+function hideBanner() { bannerEl.classList.remove('show'); }
+
+const SPECS = [
+  ["proxy",    "排队代理",     "127.0.0.1:8878 · 并发锁 2"],
+  ["astrbot",  "AstrBot",      "面板 :6185 · 反向 WS :6199"],
+  ["onebot",   "OneBot 接入",  "SnowLuma → AstrBot"],
+  ["snowluma", "SnowLuma",     "协议端 · WebUI :5099"],
+  ["account",  "QQ 账号",      "当前登录"],
+  ["bili",     "B站 账号",     "扫码登录态 · 闲时刷推荐流"],
+  ["gateway",  "模型网关",     "经排队代理探测 /v1"],
+  ["inbound",  "入站消息",     "最近一条 QQ 消息"]
+];
+const rowEl = {};
+const box = document.getElementById('rows');
+SPECS.forEach(function (sp) {
+  const d = document.createElement('div');
+  d.className = 'row';
+  d.innerHTML = '<span class="dot"></span><span class="txt"><div class="name">' + sp[1] +
+                '</div><div class="desc">' + sp[2] + '</div></span><span class="badge">…</span>';
+  box.appendChild(d);
+  rowEl[sp[0]] = d;
+});
+
+function setRow(k, cls, text) {
+  const d = rowEl[k]; if (!d) return;
+  d.className = 'row ' + cls;
+  d.querySelector('.badge').textContent = text;
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('show'); }, 1800);
+}
+function j(path, payload) {
+  const opt = payload === undefined ? {} :
+    {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)};
+  return fetch(path, opt).then(function (r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  });
+}
+
+async function copyText(t, btn) {
+  let ok = false;
+  try { await navigator.clipboard.writeText(t); ok = true; }
+  catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, t.length);
+    try { ok = document.execCommand('copy'); } catch (_) {}
+    ta.remove();
+  }
+  const old = btn.textContent;
+  btn.textContent = ok ? '已复制' : '请长按选中';
+  btn.classList.add('done');
+  toast(ok ? ('已复制：' + t) : ('复制被拦了，请长按选中：' + t));
+  setTimeout(function () { btn.textContent = old; btn.classList.remove('done'); }, 1600);
+}
+document.querySelectorAll('.cp').forEach(function (b) {
+  b.onclick = function () { copyText(b.dataset.copy, b); };
+});
+
+async function refresh() {
+  if (LOCAL) {
+    // 本地文件预览：没有后端，直接把状态标出来，别让页面一直转「…」
+    SPECS.forEach(function (s) { setRow(s[0], 'mid', '—'); });
+    document.getElementById('sum').textContent = '本地预览';
+    const p0 = document.getElementById('pill');
+    p0.className = 'pill';
+    document.getElementById('pillTxt').textContent = '本地预览';
+    document.getElementById('now').textContent = '';
+    if (document.getElementById('logbox')) document.getElementById('logbox').textContent = '本地预览：没有后端，读不到日志。';
+    showBanner('当前是<b>本地文件预览</b>（没有后端接口）：状态读不到、启动/停止按钮也调不通。<br>' +
+      '请打开 <a href="' + ORIGIN + '/console/">' + ORIGIN + '/console/</a> 使用（账号 feiyu / 密码 FeiyuBot#2026）。');
+    return;
+  }
+  try {
+    const st = await j('api/status');
+    const svc = st.services || {}, qq = st.qq || {}, gw = st.gateway || {}, cfg = st.config || {};
+
+    const proxyOk = !!gw.up && svc.gwproxy === 'active';
+    const astrOk = svc.astrbot === 'active';
+    // 后端只看日志里有没有「适配器已连接」，日志翻滚后会误判；
+    // 这里补一条硬证据：AstrBot 的反向 WS 端口在听 + 协议端能回 QQ 登录信息 = 接入正常
+    const port6199 = !!(st.ports && st.ports['6199 OneBot 反向WS']);
+    const onebotOk = !!cfg.onebot_connected || (port6199 && !!qq.online && astrOk);
+    const protoOk = svc.snowluma === 'running';
+    const qqOk = !!qq.online;
+    const gwOk = !!gw.up;
+
+    setRow('proxy', proxyOk ? 'on' : 'off', proxyOk ? '正常' : '异常');
+    setRow('astrbot', astrOk ? 'on' : 'off', astrOk ? '运行中' : '已停止');
+    setRow('onebot', onebotOk ? 'on' : 'off', onebotOk ? '已连接' : '未连接');
+    setRow('snowluma', protoOk ? 'on' : 'off', protoOk ? '运行中' : (svc.snowluma || '?'));
+    setRow('account', qqOk ? 'on' : 'off', qqOk ? (qq.nickname + ' ' + qq.uin) : '离线');
+
+    const bili = st.bili || {};
+    const biliOk = !!bili.login;
+    setRow('bili',
+      biliOk ? 'on' : 'mid',
+      biliOk ? ((bili.uname || '?') + '（UID ' + (bili.mid || '?') + '）')
+             : (bili.expired ? 'cookie 过期，重扫' : '未登录 · 点上面入口扫码'));
+
+    setRow('gateway', gwOk ? 'on' : 'off', gwOk ? '通' : '不通');
+    setRow('inbound', (st.inbound > 0) ? 'on' : 'mid',
+           (st.last_inbound_time ? st.last_inbound_time + ' ' : '') + ((st.last_inbound || '暂无')).slice(0, 12));
+
+    document.getElementById('s_req').textContent = gw.req != null ? gw.req : 0;
+    document.getElementById('s_queued').textContent = gw.queued != null ? gw.queued : 0;
+    const err = gw.err != null ? gw.err : 0;
+    const eEl = document.getElementById('s_err');
+    eEl.textContent = err;
+    eEl.style.color = err === 0 ? 'var(--ok)' : (err < 5 ? 'var(--warn)' : 'var(--bad)');
+
+    document.getElementById('sum').textContent =
+      [proxyOk, astrOk, onebotOk, protoOk, qqOk, gwOk].filter(Boolean).length + '/6 正常';
+
+    document.getElementById('l_qq').textContent = qqOk ? (qq.nickname + '（' + qq.uin + '）') : '未登录 · 点「虚拟桌面」扫码';
+    document.getElementById('l_qqd').textContent = qqOk
+      ? 'OneBot 适配器' + (onebotOk ? '已连接' : '未连接') : '当前未登录';
+
+    const tok = (st.tokens || {}).onebot || '';
+    const tokEl = document.getElementById('l_tok');
+    const tokBtn = document.getElementById('cp_tok');
+    if (tokEl) {
+      tokEl.textContent = tok || '未设置（协议端未启用校验）';
+      if (tokBtn) {
+        tokBtn.dataset.copy = tok;
+        tokBtn.style.display = tok ? '' : 'none';
+      }
+    }
+
+    document.getElementById('m_in').textContent = (st.inbound != null ? st.inbound : 0) + ' 条';
+    document.getElementById('m_send').textContent = (st.sent != null ? st.sent : 0) + ' 次';
+    const n429 = st.rate429 != null ? st.rate429 : 0;
+    const nEl = document.getElementById('m_429');
+    nEl.textContent = n429;
+    nEl.style.color = n429 === 0 ? 'var(--ok)' : (n429 < 5 ? 'var(--warn)' : 'var(--bad)');
+
+    const allOk = proxyOk && astrOk && onebotOk && protoOk && qqOk && gwOk;
+    const pill = document.getElementById('pill');
+    pill.className = 'pill ' + (allOk ? 'ok' : 'bad');
+    document.getElementById('pillTxt').textContent = allOk ? '全部正常' : '有异常';
+    document.getElementById('now').textContent = st.time || '';
+    hideBanner();
+    refreshLog();
+    biliRefresh();
+  } catch (e) {
+    const pill = document.getElementById('pill');
+    pill.className = 'pill bad';
+    document.getElementById('pillTxt').textContent = '连不上';
+    document.getElementById('sum').textContent = '—';
+    showBanner('读不到状态接口（' + (e && e.message ? e.message : '网络错误') + '）。' +
+      '8 秒后会自动重试；若一直这样，服务器上执行 <b>systemctl restart botconsole</b>。');
+  }
+}
+
+document.querySelectorAll('[data-act]').forEach(function (b) {
+  b.onclick = async function () {
+    const act = b.dataset.act;
+    b.disabled = true;
+    toast('执行中：' + b.textContent + ' …');
+    try {
+      await j('api/action', {action: act});
+      toast(b.textContent + ' 已执行');
+      setTimeout(refresh, 1200);
+    } catch (e) {
+      toast('失败：' + e.message);
+    } finally {
+      setTimeout(function () { b.disabled = false; }, 1500);
+    }
+  };
+});
+
+const logBox = document.getElementById('logbox');
+const logSrc = document.getElementById('logsrc');
+let logFollow = true;
+if (logBox) {
+  logBox.addEventListener('scroll', function () {
+    logFollow = (logBox.scrollTop + logBox.clientHeight >= logBox.scrollHeight - 30);
+  });
+}
+async function refreshLog() {
+  if (!logBox || LOCAL) return;
+  try {
+    const d = await j('api/logs?src=' + encodeURIComponent(logSrc.value) + '&n=120');
+    const lines = (d && d.lines) || [];
+    logBox.textContent = lines.length ? lines.join(String.fromCharCode(10)) : '（暂无日志）';
+    if (logFollow) logBox.scrollTop = logBox.scrollHeight;
+  } catch (e) {
+    logBox.textContent = '读不到日志（' + (e && e.message ? e.message : '网络错误') + '）';
+  }
+}
+if (logSrc) logSrc.onchange = function () { logFollow = true; refreshLog(); };
+
+const btnRefresh = document.getElementById('btn_refresh');
+if (btnRefresh) {
+  btnRefresh.onclick = function () {
+    btnRefresh.disabled = true;
+    refresh();
+    setTimeout(function () { btnRefresh.disabled = false; }, 900);
+  };
+}
+
+let timer = null;
+const swAuto = document.getElementById('sw_auto');
+function applyAuto() {
+  if (timer) { clearInterval(timer); timer = null; }
+  if (swAuto.checked) timer = setInterval(refresh, 8000);
+}
+swAuto.onchange = applyAuto;
+
+// ---------------- B站扫码登录 ----------------
+let biliPoll = null;
+
+function biliStopPoll() {
+  if (biliPoll) { clearInterval(biliPoll); biliPoll = null; }
+}
+
+async function biliRefresh() {
+  if (LOCAL) return;
+  const txt = document.getElementById('bili_state_txt');
+  const go = document.getElementById('bili_go');
+  const out = document.getElementById('btn_bili_out');
+  if (!txt) return;
+  try {
+    const d = await j('api/bili/info');
+    if (d.login) {
+      txt.textContent = '已登录：' + (d.uname || '?') + '（UID ' + (d.mid || '?') + '）· 硬币 ' +
+        (d.coins != null ? d.coins : '—');
+      if (go) go.textContent = '已登录';
+      if (out) out.style.display = '';
+    } else if (d.expired) {
+      txt.textContent = '登录过期了，点这里重扫';
+      if (go) go.textContent = '重扫 →';
+      if (out) out.style.display = 'none';
+    } else {
+      txt.textContent = '未登录 · 点这里出二维码';
+      if (go) go.textContent = '打开 →';
+      if (out) out.style.display = 'none';
+    }
+  } catch (e) { /* 后端没起来就算了 */ }
+}
+
+async function biliMakeQr() {
+  const panel = document.getElementById('bili_panel');
+  const btn = document.getElementById('btn_bili_qr');
+  const img = document.getElementById('bili_qr');
+  const msg = document.getElementById('bili_qrmsg');
+  if (!panel) return;
+  panel.style.display = '';
+  if (btn) btn.disabled = true;
+  if (msg) msg.textContent = '正在出码…';
+  try {
+    const d = await j('api/bili/qr');
+    if (!d.ok) {
+      if (msg) msg.textContent = d.error || '出码失败';
+      toast(d.error || '出码失败');
+      return;
+    }
+    if (img) img.src = d.img;
+    if (msg) msg.textContent = '等扫码…（约 3 分钟有效）';
+    biliStopPoll();
+    let tick = 0;
+    biliPoll = setInterval(async function () {
+      tick++;
+      if (tick > 140) {
+        biliStopPoll();
+        msg.textContent = '二维码过期了，点「重新出码」';
+        return;
+      }
+      try {
+        const s = await j('api/bili/qr/status?key=' + encodeURIComponent(d.key));
+        if (s.code === 0) {
+          biliStopPoll();
+          msg.textContent = '登录成功：' + (s.uname || '') + '，正在重启 AstrBot 让登录态生效…';
+          toast('B站登录成功：' + (s.uname || ''));
+          setTimeout(function () {
+            panel.style.display = 'none';
+            biliRefresh();
+            refresh();
+          }, 1800);
+        } else if (s.code === 86090) {
+          msg.textContent = '扫到了，在手机上点「确认登录」';
+        } else if (s.code === 86038) {
+          biliStopPoll();
+          msg.textContent = '二维码过期了，点「重新出码」';
+        } else {
+          msg.textContent = '等扫码… ' + (s.msg || '');
+        }
+      } catch (e) { /* 抖一下就下一轮 */ }
+    }, 1500);
+  } catch (e) {
+    if (msg) msg.textContent = '出码失败：' + e.message;
+  } finally {
+    if (btn) setTimeout(function () { btn.disabled = false; }, 800);
+  }
+}
+
+const entryBili = document.getElementById('entry_bili');
+if (entryBili) {
+  entryBili.onclick = function (ev) {
+    ev.preventDefault();
+    const panel = document.getElementById('bili_panel');
+    if (panel && panel.style.display !== 'none') {
+      panel.style.display = 'none';
+      biliStopPoll();
+      return;
+    }
+    biliMakeQr();
+  };
+}
+
+// 「服务状态」里的 B站 那一行也能点：直接跳到入口栏展开二维码
+const biliRow = rowEl['bili'];
+if (biliRow) {
+  biliRow.style.cursor = 'pointer';
+  biliRow.onclick = function () {
+    const panel = document.getElementById('bili_panel');
+    if (panel && panel.style.display !== 'none') {
+      panel.style.display = 'none';
+      biliStopPoll();
+      return;
+    }
+    biliMakeQr();
+    if (entryBili && entryBili.scrollIntoView) {
+      entryBili.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  };
+}
+const btnBiliQr = document.getElementById('btn_bili_qr');
+if (btnBiliQr) btnBiliQr.onclick = function (ev) { ev.preventDefault(); biliMakeQr(); };
+const btnBiliOut = document.getElementById('btn_bili_out');
+if (btnBiliOut) {
+  btnBiliOut.onclick = async function (ev) {
+    ev.preventDefault();
+    if (!confirm('退出B站登录？她会变回游客，推荐流不再按你的口味。')) return;
+    try {
+      await j('api/bili/logout', {});
+      toast('已退出，正在重启 AstrBot…');
+      biliStopPoll();
+      document.getElementById('bili_panel').style.display = 'none';
+      setTimeout(biliRefresh, 2000);
+    } catch (e) { toast('退出失败：' + e.message); }
+  };
+}
+
+refresh();
+applyAuto();
+</script>
+</body>
+</html>

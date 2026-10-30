@@ -11,6 +11,42 @@
     "type": "string",
     "default": "9,15,21"
   },
+  "bili_learn": {
+    "description": "学习时顺带刷B站",
+    "hint": "开着她每轮学习会刷推荐流+热搜+热门榜+一条视频的热评，学到「B站上在火什么」",
+    "type": "bool",
+    "default": true
+  },
+  "bili_idle_enable": {
+    "description": "闲着没事自己刷B站",
+    "hint": "没人聊天时每隔一段时间自己刷推荐流+看评论，刷到的内容聊天时可能提一嘴",
+    "type": "bool",
+    "default": true
+  },
+  "bili_idle_minutes": {
+    "description": "隔多久刷一次B站",
+    "hint": "分钟；0 = 连续刷（每条之间歇 2~6 分钟）。默认 20，实际上下浮动 15%",
+    "type": "int",
+    "default": 20
+  },
+  "bili_quiet_minutes": {
+    "description": "要多久没人聊天才刷（时间限制）",
+    "hint": "0 = 不限制，有人在聊也照刷（默认）；填 15 就是「安静 15 分钟才刷」",
+    "type": "int",
+    "default": 0
+  },
+  "bili_browse_count": {
+    "description": "一轮刷几个视频",
+    "hint": "默认 2，会从推荐流里随机挑，一个个看详情和评论",
+    "type": "int",
+    "default": 2
+  },
+  "bili_auto_like": {
+    "description": "刷到喜欢的顺手点赞",
+    "hint": "需要先 /b站登录；点赞用的是你的号，默认关",
+    "type": "bool",
+    "default": false
+  },
   "news_ttl_days": {
     "description": "热点保留几天",
     "hint": "超过这个天数的内容自动不提，避免把旧闻当新闻说",

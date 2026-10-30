@@ -13,7 +13,14 @@ from pathlib import Path
 
 from astrbot.api import logger
 
-from .web import bing_search
+from .web import (
+    bili_bangumi,
+    bili_comments,
+    bili_feed,
+    bili_hot_words,
+    bili_popular_items,
+    bing_search,
+)
 
 # (类型, 搜索词)
 TOPICS = (
@@ -22,17 +29,52 @@ TOPICS = (
     ("时事", "今天重要新闻 头条"),
 )
 
-EXTRACT_PROMPT = """下面是搜索得到的网页片段。请挑出 3 条**最近确实在发生或正在流行**的内容（时事、热点、网络热梗）。
+EXTRACT_PROMPT = """下面是搜索得到的网页片段，以及她在B站刷到的东西。请挑出 3 条**最近确实在发生或正在流行**的内容。
 
 硬要求：
 - 每条一行，格式：类型|一句话
+- 类型只能是：热搜 / 热梗 / 时事 / B站
 - 一句话 25 字以内
+- B站那类要写成「B站上在火什么」，比如「B站都在刷XX挑战」「B站热搜是XX」
 - 只要真正新鲜的：广告、"2023年""去年"这类过期内容、无关的百科介绍，全部丢掉
 - 判断不出是不是最近的，就跳过
 - 宁少勿滥，凑不满 3 条就少给
 
-搜索结果：
+素材：
 {body}"""
+
+
+def bili_material(n_feed: int = 6, n_comments: int = 3) -> str:
+    """把B站此刻的东西收成素材：推荐流、热搜词、热门榜、番剧榜，外加一条视频的热评。"""
+    lines: list[str] = []
+    try:
+        feed = bili_feed(n_feed)
+        for r in feed:
+            lines.append(
+                f"[B站推荐流] {r['title']}（UP：{r['up']}，播放 {r['play']}，{r['duration']}）"
+            )
+        for w in bili_hot_words(8):
+            lines.append(f"[B站热搜] {w}")
+        for r in bili_popular_items(5):
+            lines.append(f"[B站热门] {r['title']}（UP：{r['up']}，播放 {r['play']}）")
+        ban = bili_bangumi(3)
+        if ban:
+            for ln in ban.splitlines()[1:]:
+                ln = ln.strip()
+                if ln:
+                    lines.append(f"[B站番剧] {ln}")
+        # 挑推荐流第一条，看它的热评——这才叫真在刷
+        for r in feed[:2]:
+            cm = bili_comments(r["bvid"], n_comments)
+            if cm:
+                for ln in cm.splitlines()[1:]:
+                    ln = ln.strip()
+                    if ln:
+                        lines.append(f"[B站评论区] {ln}")
+                break
+    except Exception as e:  # noqa: BLE001
+        logger.debug(f"[news] B站素材抓取失败：{e}")
+    return "\n".join(lines)
 
 
 def _load(path: Path) -> dict:
@@ -79,8 +121,8 @@ def _parse(text: str) -> list[str]:
     return out[:4]
 
 
-async def learn(provider, path: Path, ttl_days: int = 3) -> list[str]:
-    """搜一轮、提炼一轮、存进去。返回这次学到的东西。"""
+async def learn(provider, path: Path, ttl_days: int = 3, with_bili: bool = True) -> list[str]:
+    """搜一轮 + 刷一轮B站、提炼一轮、存进去。返回这次学到的东西。"""
     if provider is None:
         logger.warning("[news] 没有可用模型，跳过这次学习")
         return []
@@ -93,11 +135,18 @@ async def learn(provider, path: Path, ttl_days: int = 3) -> list[str]:
             continue
         part = "\n".join(f"[{kind}] {r['title']} —— {r['snippet']}" for r in rows)
         chunks.append(part)
+
+    # B站：推荐流 + 热搜 + 热门榜 + 一条视频的热评
+    if with_bili:
+        mat = bili_material()
+        if mat:
+            chunks.append(mat)
+
     if not chunks:
-        logger.warning("[news] 搜索没有结果，跳过")
+        logger.warning("[news] 搜索和B站都没有结果，跳过")
         return []
 
-    body = "\n\n".join(chunks)[:3000]
+    body = "\n\n".join(chunks)[:4000]
     try:
         resp = await provider.text_chat(
             prompt=EXTRACT_PROMPT.format(body=body),
