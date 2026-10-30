@@ -2,7 +2,7 @@
 
 - 每 20 秒体检一次
 - 代理挂了 → 重起 tools/gw_proxy.py
-- AstrBot 挂了 → 重起 astrbot.exe run（窗口隐藏）
+- AstrBot 挂了 → 重起 AstrBot（python.exe 调 astrbot.cli，窗口隐藏）
 - SnowLuma(3000) 挂了 → 只记日志告警（QQ 需要桌面会话，不自动重启，免得把你挤下线）
 - 单实例：靠 8899 端口占位，重复启动会自己退出
 - 日志：data/logs/watchdog.log（超过 5MB 自动截断）
@@ -16,7 +16,9 @@ from datetime import datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PY = os.path.join(ROOT, ".venv", "Scripts", "python.exe")
-ASTRBOT = os.path.join(ROOT, ".venv", "Scripts", "astrbot.exe")
+ASTRBOT = [os.path.join(ROOT, ".venv", "Scripts", "python.exe"),
+           "-c", "from astrbot.cli.__main__ import cli; cli()", "run"]
+ASTRBOT_PID = 0  # spawn() 记下来，AstrBot 启动中端口还没监听时用它判断存活
 LOGDIR = os.path.join(ROOT, "data", "logs")
 LOG = os.path.join(LOGDIR, "watchdog.log")
 LOCK_PORT = 8899
@@ -84,8 +86,8 @@ def start_proxy() -> None:
 
 
 def start_astrbot() -> None:
-    spawn([ASTRBOT, "run"], "astrbot_watchdog.log")
-    log("已拉起 AstrBot (astrbot.exe run)")
+    spawn(ASTRBOT, "astrbot_watchdog.log")
+    log("已拉起 AstrBot (python.exe -> astrbot.cli)")
 
 
 def main() -> None:

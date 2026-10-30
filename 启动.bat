@@ -21,5 +21,5 @@ if errorlevel 1 (
     echo [代理] 已在运行，跳过
 )
 
-".venv\Scripts\astrbot.exe" run
+".venv\Scripts\python.exe" -c "from astrbot.cli.__main__ import cli; cli()" run
 pause

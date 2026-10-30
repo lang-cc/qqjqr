@@ -37,7 +37,9 @@ if SITE not in sys.path:
 
 PY = os.path.join(ROOT, ".venv", "Scripts", "python.exe")
 PYW = os.path.join(ROOT, ".venv", "Scripts", "pythonw.exe")
-ASTRBOT = os.path.join(ROOT, ".venv", "Scripts", "astrbot.exe")
+ASTRBOT = [os.path.join(ROOT, ".venv", "Scripts", "python.exe"),
+           "-c", "from astrbot.cli.__main__ import cli; cli()", "run"]
+ASTRBOT_PID = 0  # spawn() 记下来，AstrBot 启动中端口还没监听时用它判断存活
 PROXY = os.path.join(ROOT, "tools", "gw_proxy.py")
 CONFIG = os.path.join(ROOT, "data", "cmd_config.json")
 AB_LOG = os.path.join(ROOT, "data", "logs", "astrbot.log")
@@ -154,12 +156,14 @@ def astrbot_process_alive() -> bool:
     两个实例抢锁，QQ 那边就表现为反复掉线重连。
     """
     try:
+        if not ASTRBOT_PID:
+            return False
         out = subprocess.run(
-            ["tasklist", "/FI", "IMAGENAME eq astrbot.exe", "/NH"],
+            ["tasklist", "/FI", f"PID eq {ASTRBOT_PID}", "/NH"],
             capture_output=True, text=True, timeout=5,
             creationflags=CREATE_NO_WINDOW,
         ).stdout
-        return "astrbot.exe" in (out or "")
+        return str(ASTRBOT_PID) in (out or "")
     except Exception:
         return False
 
@@ -168,9 +172,12 @@ def spawn(cmd: list[str], tag: str) -> None:
     out = os.path.join(ROOT, "data", "logs", f"{tag}.log")
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "ab") as f:
-        subprocess.Popen(cmd, cwd=ROOT, stdout=f, stderr=f, stdin=subprocess.DEVNULL,
-                         creationflags=CREATE_NO_WINDOW,
-                         env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+        p = subprocess.Popen(cmd, cwd=ROOT, stdout=f, stderr=f, stdin=subprocess.DEVNULL,
+                             creationflags=CREATE_NO_WINDOW,
+                             env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+    global ASTRBOT_PID
+    if tag.startswith("astrbot"):
+        ASTRBOT_PID = p.pid
 
 
 def snowluma_account() -> str:
@@ -557,7 +564,7 @@ class Panel(tk.Tk):
                         else:
                             self.cool["astrbot"] = now
                             log("AstrBot 离线，自动拉起")
-                            spawn([ASTRBOT, "run"], "astrbot_watchdog")
+                            spawn(ASTRBOT, "astrbot_watchdog")
 
                 ok_all = (p_proxy and astr_ok and conns > 0 and p_snow and gw_st == 200
                           and silence is not None and silence < SILENT_MIN)
@@ -641,7 +648,7 @@ class Panel(tk.Tk):
             time.sleep(2)
         if not port_alive(6185):
             log("手动启动 AstrBot")
-            spawn([ASTRBOT, "run"], "astrbot_watchdog")
+            spawn(ASTRBOT, "astrbot_watchdog")
             self.cool["astrbot"] = time.time()
         log("已请求启动全部服务")
 
@@ -658,7 +665,7 @@ class Panel(tk.Tk):
                            creationflags=CREATE_NO_WINDOW)
             log(f"结束 AstrBot 进程 {pid}")
         time.sleep(1)
-        spawn([ASTRBOT, "run"], "astrbot_watchdog")
+        spawn(ASTRBOT, "astrbot_watchdog")
         self.cool["astrbot"] = time.time()
         log("AstrBot 已重新拉起")
 
